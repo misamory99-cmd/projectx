@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto Shop | RP Server</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#05080f;--bg2:#0b1220;--bg3:#121b2e;--border:#1e2a44;--text:#e6edf7;--muted:#8a99b5;--primary:#2563eb;--primary2:#3b82f6;--success:#22c55e;--danger:#ef4444;--radius:14px}
+body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
+img{max-width:100%;display:block}.hidden{display:none!important}.muted{color:var(--muted)}
+.navbar{position:sticky;top:0;z-index:100;background:rgba(5,8,15,.9);border-bottom:1px solid var(--border)}
+.nav-inner{max-width:1300px;margin:0 auto;display:flex;align-items:center;gap:16px;padding:14px 22px}
+.logo{font-size:1.25rem;font-weight:800;color:var(--text)}.logo span{color:var(--primary2)}
+.nav-links{display:flex;gap:4px;flex:1}
+.nav-links button{background:none;border:none;color:var(--muted);padding:8px 14px;border-radius:10px;font-weight:500;cursor:pointer;font-family:inherit}
+.nav-links button:hover,.nav-links button.active{background:var(--bg3);color:var(--text)}
+.nav-user{display:flex;align-items:center;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:12px;font-weight:600;cursor:pointer;border:none;transition:.2s;text-decoration:none;font-family:inherit}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff}
+.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-success{background:var(--success);color:#fff}.btn-danger{background:var(--danger);color:#fff}
+.btn-sm{padding:8px 14px;font-size:.85rem}.btn-full{width:100%}
+.container{max-width:1300px;margin:0 auto;padding:40px 22px}
+.hero{padding:80px 22px;text-align:center;background:radial-gradient(ellipse at top,var(--bg3) 0%,var(--bg) 70%)}
+.hero h1{font-size:clamp(1.8rem,5vw,3.2rem);margin-bottom:10px}
+.section-title{font-size:1.7rem;font-weight:800;margin-bottom:20px;border-bottom:2px solid var(--border);padding-bottom:10px}
+.cars-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px}
+.car-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column}
+.car-card .thumb{aspect-ratio:16/9;cursor:pointer;background:var(--bg3)}
+.car-card .thumb img{width:100%;height:100%;object-fit:cover}
+.car-card .body{padding:16px;flex:1;display:flex;flex-direction:column}
+.car-card h3{font-size:1rem;margin-bottom:6px}
+.car-card .tag{font-size:.75rem;padding:3px 10px;border-radius:999px;background:rgba(59,130,246,.15);color:var(--primary2);margin-bottom:10px;align-self:flex-start;font-weight:600}
+.car-card .price{font-size:1.2rem;font-weight:800;color:var(--primary2);margin-bottom:10px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:16px;max-width:600px;width:100%;position:relative}
+.modal-close{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;border:none;cursor:pointer;z-index:2}
+.modal .banner{aspect-ratio:16/9;background:var(--bg3)}
+.modal .banner img{width:100%;height:100%;object-fit:cover}
+.modal .content{padding:24px}
+.modal h2{font-size:1.5rem;margin-bottom:8px}
+.modal .price-lg{font-size:1.8rem;font-weight:800;color:var(--primary2);margin:16px 0}
+.order-item{background:var(--bg3);border-radius:10px;padding:16px;margin-bottom:12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;border:1px solid var(--border)}
+.order-item img{width:80px;height:50px;object-fit:cover;border-radius:8px}
+.order-item .info{flex:1}.order-item h4{font-size:.95rem;margin-bottom:4px}
+.badge{padding:4px 12px;border-radius:999px;font-size:.75rem;font-weight:600}
+.badge-pending{background:rgba(245,158,11,.15);color:#f59e0b}
+.badge-approved{background:rgba(34,197,94,.15);color:var(--success)}
+.badge-rejected{background:rgba(239,68,68,.15);color:var(--danger)}
+.toast{position:fixed;top:80px;right:20px;background:var(--bg2);border:1px solid var(--border);padding:14px 20px;border-radius:12px;font-weight:600;z-index:2000;transform:translateX(120%);transition:.3s}
+.toast.show{transform:translateX(0)}.toast.success{border-color:var(--success);color:var(--success)}.toast.error{border-color:var(--danger);color:var(--danger)}
+@media(max-width:900px){.nav-links{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--bg2);padding:10px}.nav-links.open{display:flex}}
+</style>
+</head>
+<body>
+
+<header class="navbar">
+  <div class="nav-inner">
+    <div class="logo">AUTO<span>SHOP</span></div>
+    <nav class="nav-links" id="navLinks">
+      <button data-page="home" class="active" onclick="showPage('home')">🏠 Domů</button>
+      <button data-page="vehicles" onclick="showPage('vehicles')">🚗 Vozidla</button>
+      <button data-page="orders" onclick="showPage('orders')">📋 Moje objednávky</button>
+      <button data-page="admin" id="adminBtn" class="hidden" onclick="showPage('admin')">⚙️ Administrace</button>
+    </nav>
+    <div class="nav-user">
+      <span id="userName" style="font-weight:600;color:var(--primary2)"></span>
+      <button id="loginBtn" class="btn btn-primary btn-sm" onclick="fakeLogin()">Přihlásit se</button>
+      <button id="adminLoginBtn" class="btn btn-outline btn-sm" onclick="adminLogin()">🔒 Admin Login</button>
+      <button id="logoutBtn" class="btn btn-outline btn-sm hidden" onclick="logout()">Odhlásit</button>
+    </div>
+  </div>
+</header>
+
+<main id="page-home">
+  <section class="hero">
+    <h1>Prémiový <span style="color:var(--primary2)">Auto Showroom</span></h1>
+    <p>Prohlédněte si nabídku a objednejte si vysněné auto.</p>
+    <button class="btn btn-primary" onclick="showPage('vehicles')">Prohlédnout vozidla</button>
+  </section>
+  <div class="container">
+    <h2 class="section-title">Doporučená vozidla</h2>
+    <div class="cars-grid" id="featuredGrid"></div>
+  </div>
+</main>
+
+<main id="page-vehicles" class="hidden">
+  <div class="container">
+    <h2 class="section-title">Všechna vozidla</h2>
+    
+    <!-- VYHLEDÁVACÍ POLE -->
+    <div style="margin-bottom: 30px;">
+        <input type="text" id="searchInput" placeholder="🔍 Hledat auto (např. Chevlon)..." 
+               style="width: 100%; max-width: 500px; padding: 14px 20px; border-radius: 12px; 
+                      border: 1px solid var(--border); background: var(--bg2); color: var(--text); 
+                      font-size: 1rem; outline: none; transition: 0.3s;"
+               onfocus="this.style.borderColor='var(--primary2)'" 
+               onblur="this.style.borderColor='var(--border)'"
+               oninput="vyhledatAuta()">
+    </div>
+
+    <div class="cars-grid" id="carsGrid"></div>
+  </div>
+</main>
+
+<main id="page-orders" class="hidden">
+  <div class="container">
+    <h2 class="section-title">Moje objednávky</h2>
+    <div id="myOrdersList"></div>
+  </div>
+</main>
+
+<main id="page-admin" class="hidden">
+  <div class="container">
+    <h2 class="section-title">Administrace</h2>
+    <div id="adminOrdersList"></div>
+  </div>
+</main>
+
+<div id="modalOverlay" class="modal-overlay hidden" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalContent"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const ADMINISTRATORI = [
+  { jmeno: "HanakHanak008", heslo: "0500" },
+  { jmeno: "misamory1", heslo: "765522" },
+  { jmeno: "Dom_cz", heslo: "Tvujdeda" },
+   { jmeno: "Kevin", heslo: "180311" },
+    { jmeno: "Mateo", heslo: "2408" },
+     { jmeno: "Clodyx_axo", heslo: "Dominik2611" },
+      { jmeno: "wolfexiiik", heslo: "Hovnocuc6969_PRX" },
+       { jmeno: "Rouska", heslo: "Frefire1234 " },
+        { jmeno: "medvidek_cz", heslo: "9371531345714371785341" },
+         { jmeno: "GALLIS_2", heslo: "hovnokleslo" },
+          { jmeno: "SERVAC", heslo: "2010" },
+          { jmeno: "Jakubko.ko", heslo: "Jakubik2418" },
+           
+
+];
+
+const DB_URL = "https://api.jsonbin.io/v3/b/6afad320ac6210605a8b69ef"; 
+const API_KEY = "$2a$10$L35IAx42Qn0us0k1lxobPe9KPkUj42cBOYAa/akV1QnJzKTUsD7pa";
+
+const CARS = [
+  {name:"1992 Chevlon Captain", price:5000, image:""},{name:"Lawn Mower", price:6000, image:""},{name:"4-Wheeler", price:15000, image:""},{name:"1988 Bullhorn Foreman", price:17500, image:""},{name:"1981 Chevlon Inferno", price:18500, image:""},{name:"1994 Chevlon Captain LTZ", price:19500, image:""},{name:"1994 Chevlon Captain Antelope SS", price:19500, image:""},{name:"C-18 Camper Trailer", price:25000, image:""},{name:"2009 Vellfire Prima", price:25000, image:""},{name:"2002 Chevlon Camion", price:25000, image:""},{name:"1995 Vellfire Evertt Extended Cab", price:25500, image:""},{name:"2003 Falcon Traveller", price:27000, image:""},{name:"1981 Chevlon L/15", price:28000, image:""},{name:"2010 Leland LTS", price:28000, image:""},{name:"1995 Overland Apache", price:28000, image:""},{name:"2009 Chevlon Captain", price:30000, image:""},{name:"2007 Chevlon Landslide", price:30000, image:""},{name:"Canyon Descender", price:32500, image:""},{name:"2006 Chevlon Commuter Van", price:33500, image:""},{name:"2008 Chevlon Camion", price:45000, image:""},{name:"2009 Bullhorn BH15", price:45000, image:""},{name:"1968 Sentinel Platinum", price:45000, image:""},{name:"2020 Navara Imperium", price:45500, image:""},{name:"1981 Chevlon L/35 Extended", price:49500, image:""},{name:"2018 Chevlon Camion", price:50500, image:""},{name:"2014 Elysion Slick", price:55000, image:""},{name:"2011 Overland Apache", price:60000, image:""},{name:"2022 Suno Reflexion", price:62500, image:""},{name:"1969 Bullhorn Prance", price:63500, image:""},{name:"1984 Vellfire Runabout", price:65000, image:""},{name:"2018 Overland Buckaroo", price:65000, image:""},{name:"2016 Falcon Scavergen", price:68000, image:""},{name:"2005 Chevlon Revver", price:70000, image:""},{name:"2005 Chryslus Champion", price:70000, image:""},{name:"2016 Chevlon Amigo LZR", price:70000, image:""},{name:"2019 Chevlon Platoro", price:70000, image:""},{name:"1977 Arrow Phoenix Nationals", price:72000, image:""},{name:"2024 Falcon Estallion", price:75000, image:""},{name:"2015 Bullhorn Prancer", price:75000, image:""},{name:"2020 Falcon Advance 450", price:79000, image:""},{name:"2020 Vellfire Riptide", price:80000, image:""},{name:"2008 Bullhorn Determinator", price:80000, image:""},{name:"2011 Chevlon Amigo S", price:80000, image:""},{name:"1967 Chevlon Corbeta C2", price:85000, image:""},{name:"2011 Bullhorn Prancer", price:85000, image:""},{name:"2016 Chevlon Amigo S", price:85250, image:""},{name:"2022 Bullhorn Determinator SFD FURY", price:85000, image:""},{name:"2023 Vellfire Everest VRD MAX", price:85000, image:""},{name:"2022 Vellfire Prairie", price:85000, image:""},{name:"2011 Chevlon Amigo LZR", price:88000, image:""},{name:"2022 Navara Boudary", price:90000, image:""},{name:"2014 Chevlon Corbeta X08", price:92500, image:""},{name:"2018 Bullhorn Puebla", price:92671, image:""},{name:"2022 Bullhorn Determinator SFD FURY BlackJack Widebody", price:95000, image:""},{name:"2021 Chevlon Camion", price:95000, image:""},{name:"2010 Averon S5", price:95000, image:""},{name:"1968 Falcon Stallion 350", price:98000, image:""},{name:"2021 Falcon Rampage Bigfoot 2-DOOR", price:99000, image:""},{name:"2020 Overland Apache SFP", price:99967, image:""},{name:"2020 BKM Munich", price:100000, image:""},{name:"2021 Falcon Rampage Beats", price:108000, image:""},{name:"2020 Leland Vault", price:110000, image:""},{name:"2023 Averon Brenmen VS Garde", price:120000, image:""},{name:"2023 Celestial Type-6", price:120000, image:""},{name:"2024 Falcon Scavenger Royal Ranch", price:125000, image:""},{name:"2022 Ferdinand Jalapeno Turbo", price:150000, image:""},{name:"2021 Stuttgart Vierturig", price:180000, image:""},{name:"2020 BKM Risen Roadster", price:200000, image:""},{name:"2014 Chevlon Corbet RZR", price:250000, image:""},{name:"2014 Chevlon Corbeta 1M Edition", price:250000, image:""},{name:"2020 Bullhorn Prancer Widebody", price:250000, image:""},{name:"2022 Terrain Traveller", price:250000, image:""},{name:"2020 Averon RS3", price:250000, image:""},{name:"2022 Averon Q8", price:280000, image:""},{name:"2015 Falcon Stallion 350", price:350000, image:""},{name:"2013 Navara Horizon", price:400000, image:""},{name:"2019 Vellfire Pioneer", price:430000, image:""},{name:"2023 Chevlon Corbeta 18", price:450000, image:""},{name:"2017 Averon R8", price:467000, image:""},{name:"2022 Stuttgart Landschaft", price:590000, image:""},{name:"2023 Leland LTS5-V Blackwing", price:635000, image:""},{name:"2024 CELESTIAL TRUCKATRON", price:650000, image:""},{name:"2021 Falcon Heritage", price:676767, image:""},{name:"2021 Takeo Experience", price:690000, image:""},{name:"2020 AVERON LM R", price:700000, image:""},{name:"2024 Averon Anodic", price:900000, image:""},{name:"2016 Surrey 650S", price:1050000, image:""},{name:"2022 Falcon Heritage Track", price:10500000, image:""},{name:"2020 Strugatti Ettore", price:20250000, image:""},{name:"2023 Kovac Helander", price:100000000, image:""}
+].map((v, i) => {
+  let catIndex = Math.floor(i / 9.4); if (catIndex > 9) catIndex = 9;
+  const cats = ["A","B","C","D","E","F","G","H","I","J"];
+  const obrazek = (v.image && v.image.trim() !== "") ? v.image : 'https://placehold.co/640x360/0b1220/3b82f6?text=' + encodeURIComponent(v.name);
+  return { id: i + 1, name: v.name, price: v.price, cat: cats[catIndex], image: obrazek };
+});
+
+let currentUser = JSON.parse(localStorage.getItem('shop_user')) || null;
+let orders = [];
+
+async function fetchData() {
+  try {
+    const res = await fetch(DB_URL + "/latest", { headers: { "X-Master-Key": API_KEY } });
+    const data = await res.json();
+    orders = data.record.orders || [];
+  } catch(e) { console.log("Načítání..."); }
+}
+
+async function saveDataToCloud() {
+  try {
+    await fetch(DB_URL, { method: 'PUT', headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY }, body: JSON.stringify({ orders: orders }) });
+  } catch(e) { showToast('❌ Chyba cloudu!', 'error'); }
+}
+
+function formatPrice(n) { return '$' + new Intl.NumberFormat('en-US').format(n); }
+function escapeHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function showToast(msg, type = 'success') { 
+  const t = document.getElementById('toast'); 
+  t.textContent = msg; 
+  t.className = 'toast ' + type; 
+  setTimeout(() => t.classList.add('show'), 10); 
+  setTimeout(() => t.classList.remove('show'), 3500); 
+}
+
+function fakeLogin() {
+  const first = prompt('Jméno:'); if(!first) return;
+  const last = prompt('Příjmení:'); if(!last) return;
+  const discordId = prompt('Zadej svoje Discord ID (např. 123456789012345678):'); if(!discordId) return;
+  
+  currentUser = { first_name: first.trim(), last_name: last.trim(), discord_id: discordId.trim(), is_admin: false };
+  localStorage.setItem('shop_user', JSON.stringify(currentUser));
+  updateUI(); showToast('✅ Přihlášen jako hráč');
+}
+
+function adminLogin() {
+  const zadaneJmeno = prompt('Zadej své ADMIN jméno (Discord):'); if (!zadaneJmeno) return;
+  const zadaneHeslo = prompt('Zadej své ADMIN heslo:'); if (!zadaneHeslo) return;
+  const jeAdmin = ADMINISTRATORI.find(a => a.jmeno.toLowerCase() === zadaneJmeno.trim().toLowerCase() && a.heslo === zadaneHeslo);
+  if (!jeAdmin) { alert('❌ Špatné jméno nebo heslo!'); return; }
+  currentUser = { first_name: zadaneJmeno.trim(), last_name: "(Admin)", is_admin: true };
+  localStorage.setItem('shop_user', JSON.stringify(currentUser));
+  updateUI(); showToast('✅ Přihlášen jako Admin');
+}
+
+function logout() { currentUser = null; localStorage.removeItem('shop_user'); updateUI(); showPage('home'); }
+
+function updateUI() {
+  document.getElementById('loginBtn').classList.toggle('hidden', !!currentUser);
+  document.getElementById('adminLoginBtn').classList.toggle('hidden', !!currentUser);
+  document.getElementById('logoutBtn').classList.toggle('hidden', !currentUser);
+  document.getElementById('userName').textContent = currentUser ? currentUser.first_name + ' ' + currentUser.last_name : '';
+  const adminBtn = document.getElementById('adminBtn');
+  if (currentUser && currentUser.is_admin) adminBtn.classList.remove('hidden'); else adminBtn.classList.add('hidden');
+}
+
+async function showPage(page) {
+  document.querySelectorAll('main[id^="page-"]').forEach(m => m.classList.add('hidden'));
+  document.getElementById('page-' + page)?.classList.remove('hidden');
+  await fetchData(); 
+  updateUI();
+  if(page === 'vehicles') {
+    document.getElementById('searchInput').value = ''; // Vymaže staré hledání
+    renderCars('carsGrid', CARS); // Ukáže všechna auta
+}
+  if(page === 'orders') renderMyOrders();
+  if(page === 'admin') renderAdminOrders();
+}
+
+function renderCars(containerId, list) {
+  document.getElementById(containerId).innerHTML = list.map(v => `
+    <div class="car-card">
+      <div class="thumb" onclick="openDetail(${v.id})"><img src="${v.image}"></div>
+      <div class="body">
+        <span class="tag">Kat. ${v.cat}</span>
+        <h3>${escapeHtml(v.name)}</h3>
+        <div class="price">${formatPrice(v.price)}</div>
+        <div style="margin-top:auto"><button class="btn btn-primary btn-sm btn-full" onclick="openDetail(${v.id})">Detail</button></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openDetail(id) {
+  const v = CARS.find(x => x.id === id); if(!v) return;
+  document.getElementById('modalContent').innerHTML = `
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="banner"><img src="${v.image}"></div>
+    <div class="content">
+      <h2>${escapeHtml(v.name)}</h2>
+      <div class="price-lg">${formatPrice(v.price)}</div>
+      <button class="btn btn-primary btn-full" onclick="buyCar(${v.id})">🛒 KOUPIT NYNÍ</button>
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.add('hidden'); }
+
+async function buyCar(id) {
+  if(!currentUser) { showToast('❌ Přihlas se!', 'error'); return; }
+  const car = CARS.find(c => c.id === id);
+
+  try {
+    await fetch('/api/poslat-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        auto: car.name, 
+        jmeno: currentUser.first_name + ' ' + currentUser.last_name, 
+        cena: car.price 
+      })
+    });
+  } catch (e) { console.log("Chyba: Server neběží."); }
+
+  await fetchData(); 
+  orders.push({ 
+    id: Date.now(), car_name: car.name, price: car.price, image: car.image, 
+    buyer: currentUser.first_name + ' ' + currentUser.last_name,
+    discord_id: currentUser.discord_id,
+    date: new Date().toLocaleString('cs-CZ'), status: 'pending'
+  });
+  await saveDataToCloud();
+  
+  showToast('✅ Objednáno!');
+  closeModal(); showPage('orders');
+    showToast('❌ Bot je offline!');
+  closeModal(); showPage('orders');
+}
+
+function renderMyOrders() {
+  if(!currentUser) return;
+  const currentFullName = (currentUser.first_name + ' ' + currentUser.last_name).trim();
+  const myOrders = orders.filter(o => o.buyer === currentFullName).reverse();
+  document.getElementById('myOrdersList').innerHTML = myOrders.length ? myOrders.map(o => `
+    <div class="order-item">
+      <img src="${o.image}">
+      <div class="info"><h4>${escapeHtml(o.car_name)}</h4><small>${formatPrice(o.price)}</small></div>
+      <span class="badge badge-${o.status}">${o.status === 'approved' ? '💳 Zaplaceno' : o.status === 'rejected' ? '❌ Zamítnuto' : '⏳ Čeká'}</span>
+    </div>
+  `).join('') : '<p>Žádné objednávky.</p>';
+}
+
+function renderAdminOrders() {
+  document.getElementById('adminOrdersList').innerHTML = orders.length ? orders.slice().reverse().map(o => `
+    <div class="order-item">
+      <img src="${o.image}">
+      <div class="info"><h4>${escapeHtml(o.car_name)}</h4><small>${escapeHtml(o.buyer)} (Discord: ${escapeHtml(o.discord_id || 'Neznámý')})</small></div>
+      <span class="badge badge-${o.status}">${o.status === 'pending' ? '⏳' : o.status === 'approved' ? '💳 Zaplaceno' : '❌'}</span>
+      
+      ${o.status === 'pending' ? `
+        <button class="btn btn-success btn-sm" onclick="prijmoutObjednavku(${o.id})">Přijmout</button>
+        <button class="btn btn-danger btn-sm" onclick="changeStatus(${o.id}, 'rejected')">Zamítnout</button>
+      ` : ''}
+      
+      <button class="btn btn-danger btn-sm" style="background:#555; margin-left:10px;" onclick="smazatObjednavku(${o.id})">🗑️ Smazat</button>
+    </div>
+  `).join('') : '<p>Žádné objednávky.</p>';
+}
+
+async function prijmoutObjednavku(orderId) {
+  const spz = prompt('Zadej přidělenou SPZ pro toto auto (např. 1A2 3456):'); if (!spz) return;
+  await fetchData();
+  const order = orders.find(o => o.id === orderId);
+  
+  if(order) {
+    try {
+      const res = await fetch('/api/poslat-dm', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ discordId: order.discord_id, auto: order.car_name, spz: spz, jmeno: order.buyer, cena: order.price })
+      });
+      
+      if (!res.ok) {
+        const err = await res.json();
+        showToast(`❌ ${err.error || 'Chyba'}`, 'error');
+        return;
+      }
+      
+      order.status = 'approved';
+      await saveDataToCloud();
+      showToast('✅ Objednávka přijata, peníze strženy, DM odeslána!');
+    } catch (e) { 
+      showToast('❌ Bot neběží, nelze schválit.', 'error'); 
+      return;
+    }
+    
+    renderAdminOrders();
+  }
+}
+
+async function changeStatus(orderId, newStatus) {
+  await fetchData(); const order = orders.find(o => o.id === orderId);
+  if(order) {
+    order.status = newStatus;
+    await saveDataToCloud();
+    renderAdminOrders();
+    showToast(newStatus === 'approved' ? '✅ Objednávka přijata!' : '❌ Objednávka zamítnuta!');
+  }
+}
+
+async function smazatObjednavku(orderId) {
+  if (!confirm('Opravdu chceš tuto objednávku nenávratně smazat?')) return;
+  await fetchData(); orders = orders.filter(o => o.id !== orderId); await saveDataToCloud(); renderAdminOrders(); showToast('🗑️ Smazáno!');
+}
+
+updateUI();
+renderCars('featuredGrid', CARS.slice(0, 6));
+</script>
+</body>
+</html>
